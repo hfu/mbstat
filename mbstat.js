@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose()
+const Database = require('better-sqlite3')
 const VectorTile = require('@mapbox/vector-tile').VectorTile
 const Protobuf = require('pbf')
 const zlib = require('zlib')
@@ -16,15 +16,17 @@ if (process.argv.length == 2) {
 }
 
 for (let i = 2; i < process.argv.length; i++) {
-  const db = new sqlite3.Database(process.argv[i], sqlite3.OPEN_READONLY)
-  db.each('SELECT * FROM tiles', (err, row) => {
-    if (err) return
+  console.log(`working with ${process.argv[i]}...`)
+  const db = new Database(process.argv[i], {readonly: true})
+  const stmt = db.prepare('SELECT * FROM tiles')
+  for (let row of stmt.iterate()) {
     const z = row.zoom_level
     const x = row.tile_column
     const y = (1 << z) - row.tile_row - 1
     const size = row.tile_data.length
     const q = _q(size)
-    if (q <= 16) return
+    //if (q <= 16) continue
+    if (q <= 16) continue
     const tile = new VectorTile(new Protobuf(zlib.gunzipSync(row.tile_data)))
     let r = {}
     let r2 = {}
@@ -40,7 +42,6 @@ for (let i = 2; i < process.argv.length; i++) {
       }
     }
     console.log(`${z}/${x}/${y}(${q}) ${JSON.stringify(r)} ${JSON.stringify(r2)}`)
-  }, () => {
-    db.close()
-  })
+  }
+  db.close()
 }
