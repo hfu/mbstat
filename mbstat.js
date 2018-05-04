@@ -10,7 +10,7 @@ const _q = v => {
   }
 }
 
-if (process.argv.length != 3) {
+if (process.argv.length == 2) {
   console.log('Usage: node mbstat.js {mbtiles...}')
   process.exit()
 }
